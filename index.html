@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFD6E7">
+<meta name="color-scheme" content="light">
+<title>A little question 💗</title>
+
+<!--
+  =====================================================================
+  SITE DE PEDIDO DE NAMORO — arquivo único (HTML + CSS + JS)
+  - Sem bibliotecas, sem internet, sem rastreamento, sem servidor.
+  - Onde editar:
+      1) Pergunta ............. procure por  "EDITAR: PERGUNTA"
+      2) Mensagem do botão NO .. procure por  "EDITAR: MENSAGEM DO NO"
+      3) A CARTA .............. procure por  "EDITAR: CARTA"
+      4) Frase final .......... procure por  "EDITAR: FRASE FINAL"
+  =====================================================================
+-->
+
+<style>
+/* =====================================================================
+   1. VARIÁVEIS E BASE
+   ===================================================================== */
+:root{
+  /* Paleta */
+  --pink-1:#FFD6E7;   /* rosa-claro   */
+  --pink-2:#FFB6D5;   /* rosa pastel  */
+  --pink-3:#FF4F9A;   /* rosa vibrante*/
+  --pink-4:#E91E63;   /* rosa-escuro  */
+  --ink:#5A1F3C;      /* texto da carta (alto contraste sobre o papel) */
+
+  /* Fontes: tudo usa fontes que já existem no aparelho (funciona offline) */
+  --script:"Snell Roundhand","Apple Chancery","Segoe Script","Lucida Handwriting","Brush Script MT",cursive;
+  --serif:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,"Times New Roman",serif,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji";
+  --emoji:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji";
+
+  /* Unidade de altura "segura" para celulares (barra do navegador) */
+  --vh:1vh;
+
+  /* Tamanhos dos corações da primeira tela (adaptam à largura e à altura) */
+  --hw:min(86vw, calc(var(--vh) * 42), 420px);   /* coração principal */
+  --aw:min(34vw, calc(var(--vh) * 17), 160px);   /* corações YES / NO */
+}
+@supports (height:1dvh){ :root{ --vh:1dvh; } }
+
+*{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
+
+html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+body{
+  margin:0;
+  min-height:100%;
+  overflow-x:hidden;
+  font-family:var(--serif);
+  color:var(--ink);
+  background:#FFD6E7;
+  -webkit-tap-highlight-color:transparent;
+}
+button{ font:inherit; color:inherit; -webkit-appearance:none; appearance:none; }
+svg{ display:block; }
+
+/* =====================================================================
+   2. FUNDO: degradê rosa, corações flutuantes e brilhos
+   ===================================================================== */
+.bg{
+  position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none;
+  background:
+    radial-gradient(120% 65% at 50% 0%, #FFF3F8 0%, rgba(255,243,248,0) 62%),
+    radial-gradient(90% 50% at 50% 100%, rgba(255,79,154,.22) 0%, rgba(255,79,154,0) 70%),
+    linear-gradient(165deg, #FFE3EE 0%, #FFD6E7 38%, #FFB6D5 100%);
+}
+.bg-heart, .sparkle{ position:absolute; opacity:0; }
+.bg-heart svg, .mini svg, .orb svg, .sparkle svg, .corner svg, .rise-heart svg{
+  width:100%; height:100%; fill:currentColor;
+}
+.bg-heart{
+  bottom:-60px; left:var(--x);
+  width:var(--s); height:calc(var(--s) * .9);
+  color:var(--c);
+  will-change:transform, opacity;
+  animation:floatUp var(--d) linear var(--delay) infinite;
+}
+@keyframes floatUp{
+  0%   { transform:translate3d(0,0,0) rotate(-8deg); opacity:0; }
+  10%  { opacity:var(--o); }
+  50%  { transform:translate3d(var(--dx),-55vh,0) rotate(8deg); }
+  90%  { opacity:var(--o); }
+  100% { transform:translate3d(calc(var(--dx) * -.5),-118vh,0) rotate(-6deg); opacity:0; }
+}
+.sparkle{
+  left:var(--x); top:var(--y);
+  width:var(--s); height:var(--s);
+  color:#fff;
+  animation:twinkle var(--d) ease-in-out var(--delay) infinite;
+}
+@keyframes twinkle{
+  0%,100%{ opacity:0; transform:scale(.4) rotate(0deg); }
+  50%    { opacity:.9; transform:scale(1) rotate(45deg); }
+}
+
+/* Corações criados por JS (explosão, chuva, toques) */
+.mini{ position:absolute; display:block; width:var(--s); height:calc(var(--s) * .9); will-change:transform, opacity; }
+#fx{ position:fixed; inset:0; z-index:60; pointer-events:none; overflow:hidden; }
+
+/* =====================================================================
+   3. TELA 1 — O PEDIDO
+   ===================================================================== */
+.screen{ position:relative; z-index:2; }
+
+.ask{
+  position:fixed; inset:0;
+  display:flex;
+  overflow-x:hidden; overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+  transition:opacity .7s ease;
+}
+.ask.out{ opacity:0; pointer-events:none; }
+
+.ask-wrap{
+  margin:auto;                     /* centraliza sem cortar o topo em telas baixas */
+  display:flex; flex-direction:column; align-items:center;
+  padding:calc(var(--vh) * 2) 0;
+}
+
+/* --- Coração principal --- */
+.main-heart{
+  position:relative; margin:0;
+  width:var(--hw); height:calc(var(--hw) * .9);
+  font-weight:normal;
+}
+.glow{
+  position:absolute; inset:-14%; border-radius:50%;
+  background:radial-gradient(closest-side, rgba(255,79,154,.5), rgba(255,79,154,0));
+  animation:glowPulse 2.6s ease-in-out infinite;
+}
+@keyframes glowPulse{
+  0%,100%{ opacity:.55; transform:scale(.96); }
+  50%    { opacity:1;   transform:scale(1.04); }
+}
+.beat{ position:absolute; inset:0; display:block; animation:heartbeat 2.6s ease-in-out infinite; transform-origin:50% 55%; }
+@keyframes heartbeat{
+  0%,100%{ transform:scale(1); }
+  14%    { transform:scale(1.055); }
+  28%    { transform:scale(1); }
+  42%    { transform:scale(1.04); }
+  70%    { transform:scale(1); }
+}
+.heart-svg{ width:100%; height:100%; filter:drop-shadow(0 12px 16px rgba(190,20,80,.35)); }
+
+/* Texto dentro do coração */
+.q{
+  position:absolute; left:50%; top:41%;
+  transform:translate(-50%,-50%);
+  width:66%;
+  text-align:center;
+  font-family:var(--serif);
+  font-style:italic; font-weight:700;
+  font-size:calc(var(--hw) * .1);
+  line-height:1.12;
+  color:#fff;
+  text-shadow:0 2px 6px rgba(140,10,60,.55), 0 0 2px rgba(140,10,60,.4);
+}
+.q span{ display:block; }
+
+/* Corações decorativos ao redor do principal */
+.orb{
+  position:absolute; left:var(--l); top:var(--t);
+  width:var(--s); height:calc(var(--s) * .9);
+  color:var(--c);
+  animation:bob var(--d) ease-in-out infinite alternate;
+  will-change:transform;
+}
+@keyframes bob{
+  from{ transform:translate3d(0,-8px,0) rotate(-8deg); }
+  to  { transform:translate3d(0,8px,0) rotate(8deg); }
+}
+
+/* --- Corações de resposta --- */
+.answers{
+  display:flex; justify-content:center; align-items:flex-start;
+  gap:calc(var(--aw) * .22);
+  margin-top:calc(var(--vh) * 3);
+  transition:opacity .5s ease, transform .5s ease;
+}
+.ans{
+  position:relative; display:block;
+  width:var(--aw); height:calc(var(--aw) * .9);
+  min-width:96px; min-height:86px;   /* área de toque confortável */
+  padding:0; border:0; background:none; cursor:pointer;
+  touch-action:manipulation;
+  transition:transform .18s ease;
+}
+.ans:active{ transform:scale(.9); }
+.ans:focus-visible{ outline:3px solid #fff; outline-offset:6px; border-radius:30%; box-shadow:0 0 0 6px var(--pink-4); }
+.ans .sway{ position:absolute; inset:0; display:block; }
+.ans svg{ width:100%; height:100%; filter:drop-shadow(0 8px 10px rgba(190,20,80,.32)); }
+.ans .label{
+  position:absolute; left:0; right:0; top:41%;
+  transform:translateY(-50%);
+  text-align:center;
+  font-family:var(--serif); font-style:italic; font-weight:800;
+  font-size:calc(var(--aw) * .27);
+  letter-spacing:.04em;
+  color:#fff;
+  text-shadow:0 2px 5px rgba(120,10,50,.6);
+  pointer-events:none;
+}
+.yes .sway{ animation:heartbeat 1.35s ease-in-out infinite; transform-origin:50% 55%; }
+.no  .sway{ animation:sway 3.6s ease-in-out infinite alternate; transform-origin:50% 90%; }
+@keyframes sway{ from{ transform:rotate(-3deg); } to{ transform:rotate(3deg); } }
+.no.shake .sway{ animation:shake .6s ease-in-out 1; }
+@keyframes shake{
+  0%,100%{ transform:translateX(0) rotate(0); }
+  20%{ transform:translateX(-7px) rotate(-6deg); }
+  40%{ transform:translateX(7px) rotate(6deg); }
+  60%{ transform:translateX(-5px) rotate(-4deg); }
+  80%{ transform:translateX(4px) rotate(3deg); }
+}
+
+/* Mensagem do NO (dentro do design, some sozinha) */
+.msg-slot{
+  min-height:calc(var(--vh) * 9);
+  display:flex; align-items:center; justify-content:center;
+  margin-top:calc(var(--vh) * 1.5);
+  padding:0 5vw;
+}
+.bubble{
+  max-width:min(88vw, 420px);
+  background:rgba(255,255,255,.94);
+  color:#B0154F;
+  font-family:var(--serif); font-weight:700;
+  font-size:clamp(1rem, 4.2vw, 1.15rem); line-height:1.35;
+  text-align:center;
+  padding:.75em 1.15em;
+  border-radius:22px;
+  box-shadow:0 8px 22px rgba(233,30,99,.22);
+  opacity:0; transform:translateY(8px) scale(.96);
+  transition:opacity .45s ease, transform .45s ease;
+  pointer-events:none;
+}
+.bubble.show{ opacity:1; transform:none; }
+.bubble .e{ font-family:var(--emoji); }
+
+/* Estado: respondeu YES (o coração principal vira vários corações) */
+.ask.answered .answers{ opacity:0; transform:translateY(24px); pointer-events:none; }
+.ask.answered .msg-slot{ opacity:0; }
+.ask.answered .beat{ animation:burstAway .9s ease-in forwards; }
+.ask.answered .orb{ opacity:0; transition:opacity .4s; }
+@keyframes burstAway{
+  0%  { transform:scale(1); opacity:1; }
+  25% { transform:scale(1.14); opacity:1; }
+  100%{ transform:scale(1.55); opacity:0; }
+}
+
+/* =====================================================================
+   4. TELA 2 — A CARTA
+   ===================================================================== */
+.letter{
+  padding:calc(env(safe-area-inset-top,0px) + 30px) 14px calc(env(safe-area-inset-bottom,0px) + 24px);
+}
+.paper{
+  position:relative;
+  max-width:600px; margin:36px auto 0;
+  padding:44px 26px 34px;
+  border-radius:28px;
+  background:
+    radial-gradient(90% 40% at 50% 100%, rgba(255,214,231,.55), rgba(255,214,231,0) 70%),
+    linear-gradient(180deg, #FFFEFB 0%, #FFF8F1 48%, #FFF0F5 100%);
+  box-shadow:0 2px 0 rgba(255,255,255,.9) inset, 0 18px 40px rgba(190,20,80,.22), 0 4px 10px rgba(190,20,80,.12);
+  opacity:0; transform:translateY(46px) scale(.96);
+  transition:opacity 1.2s ease, transform 1.4s cubic-bezier(.2,.8,.2,1);
+}
+.letter.open .paper{ opacity:1; transform:none; }
+
+/* Borda delicada */
+.paper::before{
+  content:""; position:absolute; inset:10px;
+  border:1.5px dashed #F7B3CF; border-radius:20px;
+  pointer-events:none;
+}
+/* Cantos com corações */
+.corner{ position:absolute; width:20px; height:18px; color:#FF8CBB; }
+.corner.tl{ top:14px; left:14px;  transform:rotate(-18deg); }
+.corner.tr{ top:14px; right:14px; transform:rotate(18deg); }
+.corner.bl{ bottom:14px; left:14px;  transform:rotate(18deg); }
+.corner.br{ bottom:14px; right:14px; transform:rotate(-18deg); }
+
+/* Selo em forma de coração */
+.seal{
+  position:absolute; top:-28px; left:50%;
+  width:56px; height:56px; margin-left:-28px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #FF7DB5, #E91E63 70%);
+  box-shadow:0 8px 16px rgba(190,20,80,.35);
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; opacity:0;
+}
+.seal svg{ width:26px; height:23px; fill:currentColor; }
+.letter.open .seal{ animation:sealPop .8s .9s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes sealPop{
+  from{ transform:scale(0) rotate(-30deg); opacity:0; }
+  to  { transform:scale(1) rotate(0); opacity:1; }
+}
+
+.letter-title{
+  margin:14px 0 6px; text-align:center;
+  font-family:var(--script); font-weight:400;
+  font-size:clamp(1.9rem, 8.6vw, 2.6rem); line-height:1.2;
+  color:var(--pink-4);
+  outline:none;
+}
+.letter-title .e{ font-family:var(--emoji); }
+.divider{ display:flex; justify-content:center; gap:10px; margin:0 0 22px; color:#FF8CBB; }
+.divider svg{ width:12px; height:11px; fill:currentColor; }
+
+.letter-body p{
+  margin:0 0 1.15em;
+  font-family:var(--serif);
+  font-size:1.06rem; line-height:1.78;
+  text-align:left;
+  overflow-wrap:break-word;
+  color:var(--ink);
+}
+
+/* Assinatura */
+.closing{
+  margin:1.8em 0 .5em;
+  text-align:center;
+  font-family:var(--script);
+  font-size:clamp(1.45rem, 6.4vw, 1.8rem); line-height:1.3;
+  color:var(--pink-4);
+}
+.signature{
+  margin:0 0 .4em; text-align:center;
+  font-family:var(--serif); font-style:italic; font-weight:700;
+  font-size:1.08rem; line-height:1.75;
+  color:#B0154F;
+}
+.signature span{
+  background:linear-gradient(transparent 62%, rgba(255,182,213,.65) 62%);
+  padding:0 .2em;
+  -webkit-box-decoration-break:clone; box-decoration-break:clone;
+}
+
+/* =====================================================================
+   5. FINAL — corações subindo
+   ===================================================================== */
+.finale{
+  position:relative; overflow:hidden;
+  max-width:600px; margin:28px auto 0;
+  min-height:calc(var(--vh) * 62);
+  display:flex; align-items:center; justify-content:center;
+  padding:40px 22px;
+}
+.finale p{
+  position:relative; z-index:2; margin:0; text-align:center;
+  font-family:var(--script); font-weight:400;
+  font-size:clamp(1.8rem, 8vw, 2.5rem); line-height:1.3;
+  color:var(--pink-4);
+  text-shadow:0 2px 0 rgba(255,255,255,.8), 0 0 18px rgba(255,255,255,.9);
+}
+.finale p .e{ font-family:var(--emoji); }
+.rise-layer{ position:absolute; inset:0; z-index:1; pointer-events:none; }
+.rise-heart{
+  position:absolute; bottom:-40px;
+  width:var(--s); height:calc(var(--s) * .9);
+  color:var(--c); opacity:0;
+  will-change:transform, opacity;
+  animation:riseUp 8s linear forwards;
+}
+@keyframes riseUp{
+  0%  { transform:translate3d(0,0,0) rotate(-8deg); opacity:0; }
+  15% { opacity:.85; }
+  100%{ transform:translate3d(var(--dx), calc(var(--rise) * -1), 0) rotate(10deg); opacity:0; }
+}
+
+/* =====================================================================
+   6. RESPEITA "REDUZIR MOVIMENTO" DO APARELHO
+   ===================================================================== */
+@media (prefers-reduced-motion: reduce){
+  .bg-heart{ animation:none; bottom:auto; top:var(--top); opacity:.4; }
+  .sparkle{ animation:none; opacity:.5; }
+  .glow, .beat, .yes .sway, .no .sway, .orb{ animation:none; }
+  .ask, .answers, .bubble{ transition-duration:.01s; }
+  .paper{ transform:none; transition:opacity .4s ease; }
+  .seal, .letter.open .seal{ animation:none; opacity:1; }
+  .ask.answered .beat{ animation:none; opacity:0; }
+  .no.shake .sway{ animation:none; }
+}
+
+/* Telas muito pequenas */
+@media (max-width:340px){
+  .paper{ padding:42px 20px 30px; }
+  .letter-body p{ font-size:1rem; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Símbolos SVG reutilizados (coração e brilho) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="h" viewBox="0 0 100 90">
+      <path d="M50 88C20 62 2 44 2 25C2 10 14 2 27 2C37 2 46 8 50 16C54 8 63 2 73 2C86 2 98 10 98 25C98 44 80 62 50 88Z"/>
+    </symbol>
+    <symbol id="s" viewBox="0 0 100 100">
+      <path d="M50 0C54 34 66 46 100 50C66 54 54 66 50 100C46 66 34 54 0 50C34 46 46 34 50 0Z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- Fundo animado (preenchido por JavaScript) -->
+<div class="bg" id="bg" aria-hidden="true"></div>
+
+<!-- Camada de efeitos (explosão, chuva de corações) -->
+<div id="fx" aria-hidden="true"></div>
+
+<!-- =====================================================================
+     TELA 1 — O PEDIDO
+     ===================================================================== -->
+<main class="screen ask" id="screenAsk">
+  <div class="ask-wrap">
+
+    <!-- Coração principal -->
+    <h1 class="main-heart" id="mainHeart">
+      <span class="glow" aria-hidden="true"></span>
+
+      <!-- Corações decorativos em volta -->
+      <span class="orb" aria-hidden="true" style="--l:-3%; --t:6%;  --s:calc(var(--hw)*.11); --c:#FF4F9A; --d:3.4s"><svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg></span>
+      <span class="orb" aria-hidden="true" style="--l:90%; --t:0%;  --s:calc(var(--hw)*.09); --c:#E91E63; --d:4.2s"><svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg></span>
+      <span class="orb" aria-hidden="true" style="--l:94%; --t:55%; --s:calc(var(--hw)*.12); --c:#FFB6D5; --d:3.8s"><svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg></span>
+      <span class="orb" aria-hidden="true" style="--l:-6%; --t:62%; --s:calc(var(--hw)*.08); --c:#FFFFFF; --d:4.6s"><svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg></span>
+      <span class="orb" aria-hidden="true" style="--l:48%; --t:-9%; --s:calc(var(--hw)*.07); --c:#FF8CBB; --d:3.1s"><svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg></span>
+
+      <span class="beat">
+        <svg class="heart-svg" viewBox="0 0 100 90" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="gMain" x1="0" y1="0" x2="0.35" y2="1">
+              <stop offset="0"   stop-color="#FF7DB5"/>
+              <stop offset=".55" stop-color="#FF4F9A"/>
+              <stop offset="1"   stop-color="#E91E63"/>
+            </linearGradient>
+            <radialGradient id="gShine" cx=".28" cy=".2" r=".38">
+              <stop offset="0" stop-color="#fff" stop-opacity=".55"/>
+              <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="gShade" cx=".5" cy=".98" r=".6">
+              <stop offset="0" stop-color="#8E0F3F" stop-opacity=".5"/>
+              <stop offset="1" stop-color="#8E0F3F" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <path d="M50 88C20 62 2 44 2 25C2 10 14 2 27 2C37 2 46 8 50 16C54 8 63 2 73 2C86 2 98 10 98 25C98 44 80 62 50 88Z" fill="url(#gMain)" stroke="#fff" stroke-opacity=".35" stroke-width=".8"/>
+          <path d="M50 88C20 62 2 44 2 25C2 10 14 2 27 2C37 2 46 8 50 16C54 8 63 2 73 2C86 2 98 10 98 25C98 44 80 62 50 88Z" fill="url(#gShade)"/>
+          <path d="M50 88C20 62 2 44 2 25C2 10 14 2 27 2C37 2 46 8 50 16C54 8 63 2 73 2C86 2 98 10 98 25C98 44 80 62 50 88Z" fill="url(#gShine)"/>
+          <ellipse cx="22" cy="17" rx="9" ry="4" fill="#fff" fill-opacity=".5" transform="rotate(-32 22 17)"/>
+        </svg>
+
+        <!-- EDITAR: PERGUNTA (mantenha cada parte em um <span>, assim o texto quebra bonito dentro do coração) -->
+        <span class="q"><span>Will you</span> <span>be my</span> <span>boyfriend?</span></span>
+      </span>
+    </h1>
+
+    <!-- Corações de resposta -->
+    <div class="answers" id="answers">
+
+      <!-- YES: coração cheio e pulsante -->
+      <button class="ans yes" id="yesBtn" type="button" aria-label="Yes">
+        <span class="sway">
+          <svg viewBox="0 0 100 90" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="gYes" x1="0" y1="0" x2="0.3" y2="1">
+                <stop offset="0"   stop-color="#FF8CBB"/>
+                <stop offset=".5"  stop-color="#FF4F9A"/>
+                <stop offset="1"   stop-color="#E91E63"/>
+              </linearGradient>
+              <radialGradient id="gYesShine" cx=".28" cy=".2" r=".38">
+                <stop offset="0" stop-color="#fff" stop-opacity=".55"/>
+                <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <path d="M50 88C20 62 2 44 2 25C2 10 14 2 27 2C37 2 46 8 50 16C54 8 63 2 73 2C86 2 98 10 98 25C98 44 80 62 50 88Z" fill="url(#gYes)" stroke="#fff" stroke-opacity=".4" stroke-width=".9"/>
+            <path d="M50 88C20 62 2 44 2 25C2 10 14 2 27 2C37 2 46 8 50 16C54 8 63 2 73 2C86 2 98 10 98 25C98 44 80 62 50 88Z" fill="url(#gYesShine)"/>
+            <ellipse cx="22" cy="17" rx="8" ry="3.5" fill="#fff" fill-opacity=".5" transform="rotate(-32 22 17)"/>
+          </svg>
+        </span>
+        <span class="label">YES</span>
+      </button>
+
+      <!-- NO: coração partido, tom mais apagado -->
+      <button class="ans no" id="noBtn" type="button" aria-label="No">
+        <span class="sway">
+          <svg viewBox="0 0 100 90" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="gNo" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="40" y2="90">
+                <stop offset="0"   stop-color="#E4789A"/>
+                <stop offset=".55" stop-color="#CC4F73"/>
+                <stop offset="1"   stop-color="#A83358"/>
+              </linearGradient>
+            </defs>
+            <!-- Metade esquerda -->
+            <path transform="translate(-2.5 0) rotate(-4 50 88)" fill="url(#gNo)" stroke="#fff" stroke-opacity=".3" stroke-width=".8"
+                  d="M50 16C46 8 37 2 27 2C14 2 2 10 2 25C2 44 20 62 50 88L53 68L45 56L54 42L44 30Z"/>
+            <!-- Metade direita -->
+            <path transform="translate(2.5 0) rotate(4 50 88)" fill="url(#gNo)" stroke="#fff" stroke-opacity=".3" stroke-width=".8"
+                  d="M50 16C54 8 63 2 73 2C86 2 98 10 98 25C98 44 80 62 50 88L53 68L45 56L54 42L44 30Z"/>
+            <ellipse cx="20" cy="17" rx="7" ry="3" fill="#fff" fill-opacity=".35" transform="rotate(-32 20 17)"/>
+          </svg>
+        </span>
+        <span class="label">NO</span>
+      </button>
+    </div>
+
+    <!-- EDITAR: MENSAGEM DO NO (aparece dentro do site e some sozinha) -->
+    <div class="msg-slot">
+      <div class="bubble" id="noMsg" role="status" aria-live="polite">Aww... <span class="e">💔</span> It's okay. I'll respect your answer.</div>
+    </div>
+
+  </div>
+</main>
+
+<!-- =====================================================================
+     TELA 2 — A CARTA (só aparece depois do YES)
+     ===================================================================== -->
+<section class="screen letter" id="screenLetter" hidden>
+
+  <article class="paper" id="paper">
+    <span class="seal" aria-hidden="true"><svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg></span>
+    <span class="corner tl" aria-hidden="true"><svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg></span>
+    <span class="corner tr" aria-hidden="true"><svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg></span>
+    <span class="corner bl" aria-hidden="true"><svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg></span>
+    <span class="corner br" aria-hidden="true"><svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg></span>
+
+    <!-- ===============================================================
+         EDITAR: CARTA
+         O texto abaixo é a carta original, exatamente como foi escrita.
+         Para mudar algo, edite apenas o texto dentro das tags <p>.
+         Cada parágrafo é um <p>...</p>.
+         =============================================================== -->
+    <h2 class="letter-title" id="letterTitle"><span class="e">💌</span> To my favorite person,</h2>
+    <div class="divider" aria-hidden="true">
+      <svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg>
+      <svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg>
+      <svg viewBox="0 0 100 90"><use href="#h" xlink:href="#h"/></svg>
+    </div>
+
+    <div class="letter-body">
+<p>If ur reading this, it means u said yes to being my boyfriend and I hope u know how much that simple “yes means to me❤️</p>
+
+<p>I wanted to find words that could explain everything I feel for u, but honestly, sometimes it feels impossible to put so much love into just a few sentences.</p>
+
+<p>Ur one of the most beautiful ppl I’ve ever met, not just bc of ur looks but bc of the way u are, how sweet u are, the way you treat me, and even the little things youu probably don’t even realize make me happy. I love every little thing about u, even when u call me paranoid LMAOO 😭💗 I don’t think u even realize how much I love those little things that are so us.</p>
+
+<p>I rlly wish I could be there with you rn, hugging u so tight, looking into ur eyes and telling u in person everything I sometimes try to explain through texts. I’d do anything to have the chance to meet u someday, bc to me, ur not just someone I met online.Ur someone I genuinely wanna build something with, make memories with, and experience beautiful things with.</p>
+
+<p>And I’m still gonna give u my hoodie, okay?? LMAOOO 😭🧸 I wanna imagine u wearing it knowing uo have a little piece of me with u, even when I can’t be there to hug you. It might seem like a small thing, but to me, even the little gestures mean so much when it comes to you . 💕</p>
+
+<p>I’m not gonna promise that everything will be perfect, bc ik no relationship is like that. But I wanna promise u that I’ll try to make this work, that I’ll talk things out with you, listen to you, respect ur space, and show you how important you are to me. I want youu to feel loved, wanted, and safe with me. I don’t want u to have to guess how I feel, bc I wanna remind you of it not just with words, but with my actions too.</p>
+
+<p>I wanna get to know youu more and more, hear ur stories, laugh at ur dumb jokes, share my days with you, and be there for u on the happy days and even when things aren’t going so well. I want us to have our own inside jokes, our nicknames, our silly conversations, and those memories that’ll make us smile just by thinking about them in the future.</p>
+
+<p>And most importantly, I want you to know that even tho there’s distance between us, what I feel for u is real. Maybe I can’t hold ur hand yet, feel ur hugs, or look at u up close, but that doesn’t stop me from dreaming about the day I’ll finally get to do all those things.</p>
+
+<p>If I could choose one place to be rn, it’d be next to youu. And if I could choose one thing to experience, it’d be the chance to find out, together with you, just how far this beautiful feeling could take us.</p>
+
+<p>Thank u for being you for giving me reasons to smile, and for being part of my life. I like u in a way I can’t always explain, but I hope I can show u every single day.</p>
+
+<p>So, my love, now that u said yes, lemme ask u one more thing: are u ready to receive lots of love, put up with my paranoid ass, and find out how many times I’m still gonna tell you I love you? LMAOOOO 😭❤️</p>
+
+<p>I love u sm, my boy. And I hope this is just the beginning of a story that one day we’ll get to look back on together, cuddled up in each other’s arms thinking about how it all started with a simple little letter.</p>
+    </div>
+
+    <!-- Assinatura (destaque delicado) -->
+    <p class="closing">With all the love I have in me</p>
+    <p class="signature"><span>ur future boyfriend, who’s still gonna give u that hoodie and hug u in person someday. ❤️🧸💌</span></p>
+    <!-- ================= FIM DA CARTA ================= -->
+  </article>
+
+  <!-- Seção final, separada da carta -->
+  <div class="finale" id="finale">
+    <div class="rise-layer" id="riseLayer" aria-hidden="true"></div>
+    <!-- EDITAR: FRASE FINAL -->
+    <p>Maybe this is just the beginning of our story. <span class="e">❤️</span></p>
+  </div>
+
+</section>
+
+<script>
+/* =====================================================================
+   JAVASCRIPT PURO — sem bibliotecas, sem rede, sem rastreamento
+   ===================================================================== */
+(function () {
+  'use strict';
+
+  /* ---------- Utilidades ---------- */
+  var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var canAnimate = !reduce && typeof Element.prototype.animate === 'function';
+
+  var COLORS = ['#FFB6D5', '#FF4F9A', '#E91E63', '#FF8CBB', '#FFD6E7', '#FFFFFF'];
+  var HEART = '<svg viewBox="0 0 100 90" aria-hidden="true" focusable="false"><use href="#h" xlink:href="#h"></use></svg>';
+  var SPARK = '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><use href="#s" xlink:href="#s"></use></svg>';
+
+  function $(id) { return document.getElementById(id); }
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+
+  /* Cria um coração pequeno (usado nos efeitos) */
+  function mini(size, color) {
+    var el = document.createElement('span');
+    el.className = 'mini';
+    el.style.setProperty('--s', size + 'px');
+    el.style.color = color;
+    el.innerHTML = HEART;
+    return el;
+  }
+
+  var fx = $('fx');
+
+  /* ---------- Fundo: corações flutuantes e brilhos ---------- */
+  (function buildBackground() {
+    var bg = $('bg');
+    var hearts = reduce ? 8 : (window.innerWidth < 600 ? 12 : 20);
+    var i, el, s;
+
+    for (i = 0; i < hearts; i++) {
+      s = rand(14, 34);
+      el = document.createElement('span');
+      el.className = 'bg-heart';
+      el.style.setProperty('--x', rand(0, 94).toFixed(1) + '%');
+      el.style.setProperty('--s', s.toFixed(0) + 'px');
+      el.style.setProperty('--c', pick(COLORS));
+      el.style.setProperty('--o', rand(0.35, 0.7).toFixed(2));
+      el.style.setProperty('--d', rand(16, 28).toFixed(1) + 's');
+      el.style.setProperty('--delay', '-' + rand(0, 28).toFixed(1) + 's');
+      el.style.setProperty('--dx', rand(-40, 40).toFixed(0) + 'px');
+      el.style.setProperty('--top', rand(4, 90).toFixed(0) + '%');
+      el.innerHTML = HEART;
+      bg.appendChild(el);
+    }
+
+    var sparkles = reduce ? 6 : 12;
+    for (i = 0; i < sparkles; i++) {
+      s = rand(8, 16);
+      el = document.createElement('span');
+      el.className = 'sparkle';
+      el.style.setProperty('--x', rand(2, 96).toFixed(1) + '%');
+      el.style.setProperty('--y', rand(2, 96).toFixed(1) + '%');
+      el.style.setProperty('--s', s.toFixed(0) + 'px');
+      el.style.setProperty('--d', rand(3, 6).toFixed(1) + 's');
+      el.style.setProperty('--delay', '-' + rand(0, 6).toFixed(1) + 's');
+      el.innerHTML = SPARK;
+      bg.appendChild(el);
+    }
+  })();
+
+  /* ---------- Efeitos ---------- */
+
+  /* Corações que se espalham a partir de um ponto */
+  function burstHearts(cx, cy, count, spread) {
+    if (!canAnimate) { return; }
+    for (var i = 0; i < count; i++) {
+      var s = rand(14, 32);
+      var el = mini(s, pick(COLORS));
+      el.style.left = (cx - s / 2) + 'px';
+      el.style.top = (cy - s * 0.45) + 'px';
+      fx.appendChild(el);
+
+      var ang = rand(0, Math.PI * 2);
+      var dist = rand(spread * 0.45, spread);
+      var dx = Math.cos(ang) * dist;
+      var dy = Math.sin(ang) * dist - rand(10, 60);
+
+      (function (node, x, y) {
+        var anim = node.animate([
+          { transform: 'translate3d(0,0,0) scale(.3) rotate(0deg)', opacity: 1 },
+          { transform: 'translate3d(' + x + 'px,' + y + 'px,0) scale(1) rotate(' + rand(-40, 40).toFixed(0) + 'deg)', opacity: 1, offset: 0.6 },
+          { transform: 'translate3d(' + (x * 1.08) + 'px,' + (y + 70) + 'px,0) scale(.8) rotate(' + rand(-60, 60).toFixed(0) + 'deg)', opacity: 0 }
+        ], { duration: rand(1100, 1700), easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+        anim.onfinish = function () { node.remove(); };
+      })(el, dx, dy);
+    }
+  }
+
+  /* Pequena chuva de corações */
+  function heartRain() {
+    if (!canAnimate) { return; }
+    var w = window.innerWidth, h = window.innerHeight;
+    var total = w < 600 ? 28 : 40;
+    for (var i = 0; i < total; i++) {
+      var s = rand(12, 26);
+      var el = mini(s, pick(COLORS));
+      el.style.left = rand(0, w - s).toFixed(0) + 'px';
+      el.style.top = '-40px';
+      el.style.opacity = '0';
+      fx.appendChild(el);
+
+      (function (node) {
+        var drift = rand(-50, 50);
+        var anim = node.animate([
+          { transform: 'translate3d(0,0,0) rotate(0deg)', opacity: 0.85 },
+          { transform: 'translate3d(' + drift + 'px,' + (h + 80) + 'px,0) rotate(' + rand(-40, 40).toFixed(0) + 'deg)', opacity: 0.85 }
+        ], { duration: rand(3200, 5200), delay: rand(0, 2200), easing: 'linear', fill: 'both' });
+        anim.onfinish = function () { node.remove(); };
+      })(el);
+    }
+  }
+
+  /* Corações bem pequenos que sobem no ponto do toque */
+  function touchSparks(x, y, muted) {
+    if (!canAnimate) { return; }
+    for (var i = 0; i < 5; i++) {
+      var s = rand(8, 14);
+      var el = mini(s, muted ? '#D98BA6' : pick(COLORS));
+      el.style.left = (x - s / 2) + 'px';
+      el.style.top = (y - s / 2) + 'px';
+      fx.appendChild(el);
+      (function (node) {
+        var anim = node.animate([
+          { transform: 'translate3d(0,0,0) scale(.5)', opacity: 1 },
+          { transform: 'translate3d(' + rand(-40, 40).toFixed(0) + 'px,' + (-rand(30, 70)).toFixed(0) + 'px,0) scale(1)', opacity: 0 }
+        ], { duration: 750, easing: 'ease-out', fill: 'forwards' });
+        anim.onfinish = function () { node.remove(); };
+      })(el);
+    }
+  }
+
+  /* Lágrimas suaves (corações apagados que caem devagar) ao tocar em NO */
+  function softDrops(x, y) {
+    if (!canAnimate) { return; }
+    for (var i = 0; i < 4; i++) {
+      var s = rand(9, 14);
+      var el = mini(s, '#D98BA6');
+      el.style.left = (x + rand(-24, 24) - s / 2) + 'px';
+      el.style.top = (y - 6) + 'px';
+      fx.appendChild(el);
+      (function (node, d) {
+        var anim = node.animate([
+          { transform: 'translate3d(0,0,0)', opacity: 0.9 },
+          { transform: 'translate3d(' + rand(-8, 8).toFixed(0) + 'px,' + rand(70, 120).toFixed(0) + 'px,0)', opacity: 0 }
+        ], { duration: 1500, delay: d, easing: 'ease-in', fill: 'both' });
+        anim.onfinish = function () { node.remove(); };
+      })(el, i * 160);
+    }
+  }
+
+  /* ---------- Botões ---------- */
+  var screenAsk = $('screenAsk');
+  var screenLetter = $('screenLetter');
+  var mainHeart = $('mainHeart');
+  var yesBtn = $('yesBtn');
+  var noBtn = $('noBtn');
+  var noMsg = $('noMsg');
+  var answered = false;
+  var noTimer = null;
+
+  /* Efeito de toque agradável nos dois corações */
+  yesBtn.addEventListener('pointerdown', function (e) { touchSparks(e.clientX, e.clientY, false); });
+  noBtn.addEventListener('pointerdown', function (e) { touchSparks(e.clientX, e.clientY, true); });
+
+  /* --- NO: reação carinhosa, sem bloquear nada --- */
+  noBtn.addEventListener('click', function () {
+    if (answered) { return; }
+
+    noBtn.classList.remove('shake');
+    void noBtn.offsetWidth;                 /* reinicia a animação */
+    noBtn.classList.add('shake');
+
+    var r = noBtn.getBoundingClientRect();
+    softDrops(r.left + r.width / 2, r.top + r.height * 0.5);
+
+    noMsg.classList.add('show');
+    clearTimeout(noTimer);
+    noTimer = setTimeout(function () { noMsg.classList.remove('show'); }, 4200);
+  });
+
+  /* --- YES: explosão de corações + transição para a carta --- */
+  yesBtn.addEventListener('click', function () {
+    if (answered) { return; }
+    answered = true;
+    clearTimeout(noTimer);
+    noMsg.classList.remove('show');
+
+    var r = mainHeart.getBoundingClientRect();
+    screenAsk.classList.add('answered');        /* coração principal se desfaz */
+    burstHearts(r.left + r.width / 2, r.top + r.height * 0.45, 28, Math.max(r.width * 0.9, 220));
+
+    setTimeout(openLetter, reduce ? 250 : 900);
+  });
+
+  function openLetter() {
+    screenAsk.classList.add('out');             /* tela 1 some suavemente */
+
+    setTimeout(function () {
+      screenAsk.hidden = true;
+      screenLetter.hidden = false;
+      window.scrollTo(0, 0);
+      void screenLetter.offsetWidth;
+      screenLetter.classList.add('open');       /* papel surge */
+
+      var title = $('letterTitle');
+      title.setAttribute('tabindex', '-1');
+      try { title.focus({ preventScroll: true }); } catch (e) { /* ignora */ }
+
+      heartRain();
+      watchFinale();
+    }, reduce ? 150 : 650);
+  }
+
+  /* ---------- Final: corações subindo ---------- */
+  var finale = $('finale');
+  var riseLayer = $('riseLayer');
+  var riseTimer = null;
+
+  function spawnRise() {
+    if (riseLayer.childElementCount > 16) { return; }
+    var s = rand(14, 32);
+    var el = document.createElement('span');
+    el.className = 'rise-heart';
+    el.style.left = rand(2, 94).toFixed(1) + '%';
+    el.style.setProperty('--s', s.toFixed(0) + 'px');
+    el.style.setProperty('--c', pick(COLORS));
+    el.style.setProperty('--dx', rand(-50, 50).toFixed(0) + 'px');
+    el.style.setProperty('--rise', (finale.offsetHeight + 80) + 'px');
+    el.style.animationDuration = rand(6, 10).toFixed(1) + 's';
+    el.innerHTML = HEART;
+    el.addEventListener('animationend', function () { el.remove(); });
+    riseLayer.appendChild(el);
+  }
+
+  function startRise() {
+    if (riseTimer) { return; }
+    spawnRise(); spawnRise(); spawnRise();
+    riseTimer = setInterval(spawnRise, 650);
+  }
+  function stopRise() {
+    clearInterval(riseTimer);
+    riseTimer = null;
+  }
+
+  function watchFinale() {
+    if (reduce) {
+      /* Sem movimento: apenas alguns corações parados */
+      for (var i = 0; i < 6; i++) {
+        var s = rand(16, 30);
+        var el = document.createElement('span');
+        el.className = 'rise-heart';
+        el.style.animation = 'none';
+        el.style.opacity = '0.5';
+        el.style.bottom = 'auto';
+        el.style.top = rand(8, 85).toFixed(0) + '%';
+        el.style.left = rand(4, 92).toFixed(0) + '%';
+        el.style.setProperty('--s', s.toFixed(0) + 'px');
+        el.style.setProperty('--c', pick(COLORS));
+        el.innerHTML = HEART;
+        riseLayer.appendChild(el);
+      }
+      return;
+    }
+    /* Só gasta bateria quando essa parte está na tela */
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { startRise(); } else { stopRise(); } });
+      }, { threshold: 0.15 });
+      io.observe(finale);
+    } else {
+      startRise();
+    }
+  }
+
+  /* Pausa os efeitos se a aba ficar em segundo plano */
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { stopRise(); }
+  });
+})();
+</script>
+</body>
+</html>
